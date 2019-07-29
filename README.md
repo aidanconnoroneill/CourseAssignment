@@ -1,10 +1,27 @@
-#Course Assignment
+####Course Assignment
 
 A project that assigns courses to students using weighted maximum satisfiability techniques in an effort to maximize utility.  It guarantees that, should such a solution exist, each course will have at minimum 5 students and at most 10 and that students will not receive courses that they have not requested.  It offers two objective functions that give preference to students first picks over their second picks and so on and so forth.  
 
 ## Getting Started
 
-This project is written in python3 and depends on click and Google's ortools.  To install the two libraries on ubuntu, open a terminal and run teh command 
+This project is written in python3 and depends on click and Google's ortools.  To install the two libraries on Mac or Linux, open a terminal.  
+
+You should have pip automatically installed with python but if you don't, run the command on linux:
+
+```
+sudo apt update
+sudo apt install python3-pip
+```
+For mac, run 
+```
+sudo easy_install pip
+```
+Once you've installed pip, run the following two commands:
+```
+pip3 install ortools
+pip3 install click
+```
+On 
 
 These instructions will get you a copy of the project up and running on your local machine for development and testing purposes. See deployment for notes on how to deploy the project on a live system.
 
