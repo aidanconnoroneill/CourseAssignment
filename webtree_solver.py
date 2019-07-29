@@ -1,7 +1,6 @@
 import csv
 import os
 import click
-import datetime
 
 from ortools.sat.python import cp_model
 
