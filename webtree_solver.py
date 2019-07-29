@@ -53,6 +53,7 @@ def read_data(filename, is_exp):
     students = []
     full_mapping = {}
     students_to_picks = {}
+    student_hashes_to_names = {}
     with open(filename, 'r') as file:
         csv_reader = csv.reader(file, delimiter=',')
 
@@ -60,10 +61,11 @@ def read_data(filename, is_exp):
             if count == 0:
                 count += 1
                 continue
-            count += 1
-            if count > 300:
-                break
+            # count += 1
+            # if count > 3:
+            #     break
             student_id = hash(line[0])
+            student_hashes_to_names.update({student_id: line[0]})
             students.append(student_id)
             periods = []
             for period in range(1, 5):
@@ -82,8 +84,11 @@ def read_data(filename, is_exp):
         for c in courses:
             for s in students:
                 if (c, s) not in full_mapping:
-                    full_mapping.update({(c, s): 0})
-        return (courses, students, full_mapping, students_to_picks)
+                    full_mapping.update({(c, s): -100})
+        print(full_mapping)
+
+        return (courses, students, full_mapping, students_to_picks,
+                student_hashes_to_names)
 
 
 @click.command()
@@ -98,14 +103,14 @@ def main(exp_weighting):
     if (exp_weighting is not None):
         exponential_weighting = True
 
-    data_path = 'CoursePicks.csv'  # append data directory
+    data_path = 'AutomatedCoursePicks.csv'  #Data directory
     parsed_data = read_data(data_path, exponential_weighting)
     courses = parsed_data[0]
     students = parsed_data[1]
     mapping = parsed_data[2]
     students_to_picks = parsed_data[3]
-    print('Parsed')
-    print(students_to_picks)
+    student_hashes_to_names = parsed_data[4]
+
     model = cp_model.CpModel()
     course_match = {}
 
@@ -118,22 +123,19 @@ def main(exp_weighting):
         for period in range(0, 4):
             picks = students_to_picks[s][period]
             model.Add(sum(course_match[(c, s)] for c in picks) == 1)
+
     for c in courses:
         course_max = 10
         course_min = 5
         model.Add(sum(course_match[(c, s)] for s in students) <= course_max)
-        # model.Add(sum(course_match[(c, s)] for s in students) >= course_min)
+        model.Add(sum(course_match[(c, s)] for s in students) >= course_min)
 
-    # model.Maximize(
-    #     sum(course_match[(c, s)] * webtree[(c, s)]) for c in courses
-    #     for s in students)
     model.Maximize(
         sum(course_match[(c, s)] * mapping[(c, s)] for c in courses
             for s in students))
 
     solver = cp_model.CpSolver()
-    # solution_printer = ClassesPartialSolutionPrinter(course_match, courses,
-    # students, range(5))
+
     solver.Solve(model)
 
     # Log statistics about the solution. Used to evaluate the "goodness" of a solution
@@ -142,15 +144,29 @@ def main(exp_weighting):
     if not os.path.exists('results'):
         os.mkdir('results')
 
-    cur_filename = 'results/' + '_' + str(datetime.datetime.now())
+    cur_filename = 'results/' + 'results'  #+ str(datetime.datetime.now())
     f = open(cur_filename, 'w')
-    # for i in range(0, 25):
-    # percent = (num_successes[i] * 100 / num_students)
-    # senior_percent = (num_senior_succ[i] * 100 / tot_num_senior)
-    # junior_percent = (num_junior_succ[i] * 100 / tot_num_junior)
-    # soph_percent = (num_soph_succ[i] * 100 / tot_num_soph)
-    # first_percent = (num_first_succ[i] * 100 / tot_num_first)
 
+    # for s in students_to_picks:
+    #     for period in range(0, 4):
+    #         picks = students_to_picks[s][period]
+    #         for c in picks:
+    #             if solver.Value(course_match[(c, s)]) == 1:
+    #                 print("Course: " + str(c) + " Student: " +
+    #                       str(student_hashes_to_names[s]))
+
+    #         print(sum(solver.Value(course_match[(c, s)]) for c in picks))
+
+    for student_hash in student_hashes_to_names:
+        student_name = student_hashes_to_names[student_hash]
+        str_to_write = student_name + ": "
+        for c in courses:
+            if solver.Value(course_match[(c, student_hash)]) == 1:
+                # print(course_match[(c, student_hash)])
+                str_to_write += str(c)
+                str_to_write += ', '
+        str_to_write += '\n'
+        f.write(str_to_write)
     # f.write("\n=================")
     # f.write(
     #     "\nPercent of all students that got their {}th choice: {}% ({} total)\n"
