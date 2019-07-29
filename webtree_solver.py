@@ -102,7 +102,7 @@ def main(exp_weighting):
     if (exp_weighting is not None):
         exponential_weighting = True
 
-    data_path = 'AutomatedCoursePicks.csv'  #Data directory
+    data_path = 'CoursePicks.csv'  #Data directory
     parsed_data = read_data(data_path, exponential_weighting)
     courses = parsed_data[0]
     students = parsed_data[1]

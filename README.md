@@ -2,11 +2,12 @@
 
 A project that assigns courses to students using weighted maximum satisfiability techniques in an effort to maximize utility.  It guarantees that, should such a solution exist, each course will have at minimum 5 students and at most 10 and that students will not receive courses that they have not requested.  It offers two objective functions that give preference to students first picks over their second picks and so on and so forth.  
 
-## Getting Started
+
+### Prerequisites
 
 This project is written in python3 and depends on click and Google's ortools.  To install the two libraries on Mac or Linux, open a terminal.  
 
-You should have pip automatically installed with python but if you don't, run the command on linux:
+You should have pip automatically installed with python but if you don't, run these commands on linux:
 
 ```
 sudo apt update
@@ -21,79 +22,58 @@ Once you've installed pip, run the following two commands:
 pip3 install ortools
 pip3 install click
 ```
-On 
 
-These instructions will get you a copy of the project up and running on your local machine for development and testing purposes. See deployment for notes on how to deploy the project on a live system.
+## Getting Started
 
-### Prerequisites
+Once you have the dependencies outlined in Prerequisites, download webtree_solver.py and place it in the same directory as the csv you have stored the students' course perferences in.  Name your csv CoursePicks.csv.  An example csv is provided in AutomatedCoursePicks.csv above - it should have a header row, and each row afterwards should follow the format of 
+```
+Name, Period 1 Preference 1, Period 1 Preference 2, Period 1 Preference 3, Period 1 Preference 4, Period 1 Preference 5, Period 2 Preference 1, ...
+```
+Please note that if either the number of periods or number of preferences preferences change from 4 and 5 respectively, this code will not run properly.  
 
-What things you need to install the software and how to install them
+To run, open a terminal and navigate to the directory that contains webtree_solver.py.  To use the default configuration, run with:
 
 ```
-Give examples
+python3 webtree_solver.py
 ```
-
-### Installing
-
-A step by step series of examples that tell you how to get a development env running
-
-Say what the step will be
+If instead of using the default configuration, you wish to use the exponential weighting scheme, run with 
 
 ```
-Give the example
+python3 webtree_solver.py -e 1
 ```
 
-And repeat
+The default configuration gives a weighting scheme of 10, 9, 8, 2 and 1 to each of a student's first, second, third, fourth and fifth picks.  The exponential weighting scheme gives a weighting of 16, 8, 4, 2, and 1 to the picks.  
+
+### Configuring
+
+If you want to change the course ceiling and floor, go to the following two lines of code 
 
 ```
-until finished
+        course_max = 10
+        course_min = 5
 ```
-
-End with an example of getting some data out of the system or using it for a little demo
-
-## Running the tests
-
-Explain how to run the automated tests for this system
-
-### Break down into end to end tests
-
-Explain what these tests test and why
+and change them to the values that you prefer.  Similarly, if you want to try a different weighting scheme, navigate to 
 
 ```
-Give an example
+    else:
+        if pos == 1:
+            return 10
+        if pos == 2:
+            return 9
+        if pos == 3:
+            return 8
+        if pos == 4:
+            return 2
+        if pos == 5:
+            return 1
 ```
-
-### And coding style tests
-
-Explain what these tests test and why
-
-```
-Give an example
-```
-
-## Deployment
-
-Add additional notes about how to deploy this on a live system
-
-## Built With
-
-* [Dropwizard](http://www.dropwizard.io/1.0.2/docs/) - The web framework used
-* [Maven](https://maven.apache.org/) - Dependency Management
-* [ROME](https://rometools.github.io/rome/) - Used to generate RSS Feeds
-
-## Contributing
-
-Please read [CONTRIBUTING.md](https://gist.github.com/PurpleBooth/b24679402957c63ec426) for details on our code of conduct, and the process for submitting pull requests to us.
-
-## Versioning
-
-We use [SemVer](http://semver.org/) for versioning. For the versions available, see the [tags on this repository](https://github.com/your/project/tags). 
+Edit the values after each "return" statement to whatever weight you prefer.  
 
 ## Authors
 
-* **Aidan O'Neill** - *Initial work* - [PurpleBooth](https://github.com/PurpleBooth)
+* **Aidan O'Neill** - *Initial work* - [Aidan](https://github.com/aidanoneill3776)
 
-See also the list of [contributors](https://github.com/your/project/contributors) who participated in this project.
+See also the list of [contributors](https://github.com/aidanoneill3776/CourseAssignment/contributors) who participated in this project.
 
 ## License
 
