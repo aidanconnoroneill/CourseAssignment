@@ -143,7 +143,7 @@ def main(exp_weighting):
     if not os.path.exists('results'):
         os.mkdir('results')
 
-    cur_filename = 'results/' + 'results'  #+ str(datetime.datetime.now())
+    cur_filename = 'results/' + 'results.txt'  #+ str(datetime.datetime.now())
     f = open(cur_filename, 'w')
 
     # for s in students_to_picks:

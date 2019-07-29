@@ -1,6 +1,6 @@
 # Course Assignment
 
-A project that assigns courses to students using weighted maximum satisfiability techniques in an effort to maximize utility.  It guarantees that, should such a solution exist, each course will have at minimum 5 students and at most 10 and that students will not receive courses that they have not requested.  It offers two objective functions that give preference to students first picks over their second picks and so on and so forth.  
+A project that assigns courses to students using weighted maximum satisfiability techniques in an effort to maximize utility.  It guarantees that, should such a solution exist, each course will have at minimum 5 students and at most 10 and that students will not receive courses that they have not requested.  It offers two objective functions that give preference to students' first picks over their second picks and so on and so forth.  
 
 
 ### Prerequisites
@@ -43,6 +43,8 @@ python3 webtree_solver.py -e 1
 ```
 
 The default configuration gives a weighting scheme of 10, 9, 8, 2 and 1 to each of a student's first, second, third, fourth and fifth picks.  The exponential weighting scheme gives a weighting of 16, 8, 4, 2, and 1 to the picks.  
+
+Course assignments will be written to /results/results.txt.  
 
 ### Configuring
 
