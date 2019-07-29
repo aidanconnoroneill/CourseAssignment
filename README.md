@@ -1,4 +1,4 @@
-####Course Assignment
+#### Course Assignment
 
 A project that assigns courses to students using weighted maximum satisfiability techniques in an effort to maximize utility.  It guarantees that, should such a solution exist, each course will have at minimum 5 students and at most 10 and that students will not receive courses that they have not requested.  It offers two objective functions that give preference to students first picks over their second picks and so on and so forth.  
 
