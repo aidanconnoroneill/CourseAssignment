@@ -15,9 +15,10 @@ sudo apt install python3-pip
 ```
 For mac, run 
 ```
-sudo easy_install pip
+/usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
+brew install python3
 ```
-Once you've installed pip, run the following two commands:
+Once you've run the above commands, install ortools and click by running:
 ```
 pip3 install ortools
 pip3 install click
@@ -27,7 +28,7 @@ pip3 install click
 
 Once you have the dependencies outlined in Prerequisites, download webtree_solver.py and place it in the same directory as the csv you have stored the students' course perferences in.  Name your csv CoursePicks.csv.  An example csv is provided in AutomatedCoursePicks.csv above - it should have a header row, and each row afterwards should follow the format of 
 ```
-Name, Period 1 Preference 1, Period 1 Preference 2, Period 1 Preference 3, Period 1 Preference 4, Period 1 Preference 5, Period 2 Preference 1, ...
+first, last, family,P1 Board Game, P1 Magic, P1 Uno, P1 Origami, P1 Marvel, P1 Zumba, P1 Relax, P2 Fitness, ...
 ```
 Please note that if either the number of periods or number of preferences preferences change from 4 and 5 respectively, this code will not run properly.  
 

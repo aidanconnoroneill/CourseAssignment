@@ -30,6 +30,8 @@ class ClassesPartialSolutionPrinter(cp_model.CpSolverSolutionCallback):
 
 
 def get_course_weight(pos, is_exp):
+    if pos is None:
+        return -1
     if (is_exp):
         return 2**(5 - pos)
     else:
@@ -46,52 +48,101 @@ def get_course_weight(pos, is_exp):
     return -1
 
 
+def get_period(word):
+    period = word.split()[0]
+    if period == 'P1':
+        return 1
+    if period == 'P2':
+        return 2
+    if period == 'P3':
+        return 3
+    if period == 'P4':
+        return 4
+    return -1
+
+
+def get_num_stars(rank):
+    if rank is None:
+        return "UH-OH"
+    ret = ""
+    for i in range(0, rank):
+        ret += '*'
+    return ret
+
+
 def read_data(filename, is_exp):
     count = 0
-    courses = []
+    course_hashes_to_names = {}
     students = []
     full_mapping = {}
     students_to_picks = {}
     student_hashes_to_names = {}
+
+    courses = []
+
+    num_courses_per_period = [0, 0, 0, 0]
+    first_line = []
+
+    student_course_to_student_rank = {}
+
     with open(filename, 'r') as file:
         csv_reader = csv.reader(file, delimiter=',')
 
         for line in csv_reader:
+            # Read in first line of courses
             if count == 0:
+                first_line = line
                 count += 1
+                for i in range(3, len(line)):
+                    if (len(line[i]) < 3):
+                        continue
+                    num_courses_per_period[get_period(line[i]) - 1] += 1
+                    course_hashes_to_names.update({hash(line[i]): line[i]})
+                    courses.append(hash(line[i]))
                 continue
-            # count += 1
+            # Get the full student
+            full_student = (line[0], line[1], line[2])
+            student_id = hash(full_student)
+            student_hashes_to_names.update({student_id: full_student})
+            students.append(student_id)
+
+            count += 1
             # if count > 3:
             #     break
-            student_id = hash(line[0])
-            student_hashes_to_names.update({student_id: line[0]})
-            students.append(student_id)
             periods = []
+            index_in_line = 3
             for period in range(1, 5):
                 picks = []
-                for pick_index in range(1, 6):
-                    index = (period - 1) * 5 + pick_index
-                    course_id = int(line[index])
-                    weight = get_course_weight(pick_index, is_exp)
-                    full_mapping.update({(course_id, student_id): weight})
-                    if (course_id not in courses):
-                        courses.append(course_id)
-                    picks.append(course_id)
+                for course in range(0, num_courses_per_period[period - 1]):
+                    pick_rank = None
+                    if (line[index_in_line] != ''):
+                        pick_rank = int(line[index_in_line])
+                    weight = get_course_weight(pick_rank, is_exp)
+                    full_mapping.update({
+                        (hash(first_line[index_in_line]), student_id):
+                        weight
+                    })
+                    student_course_to_student_rank.update({
+                        (hash(first_line[index_in_line]), student_id):
+                        pick_rank
+                    })
+                    if weight != -1:
+                        picks.append(hash(first_line[index_in_line]))
+                    index_in_line += 1
                 periods.append(picks)
             students_to_picks.update({student_id: periods})
 
-        for c in courses:
-            for s in students:
-                if (c, s) not in full_mapping:
-                    full_mapping.update({(c, s): -100})
-        print(full_mapping)
+        # for c in course_hashes_to_names:
+        #     for s in students:
+        #         if (c, s) not in full_mapping:
+        #             full_mapping.update({(c, s): -100})
 
-        return (courses, students, full_mapping, students_to_picks,
-                student_hashes_to_names)
+        return (course_hashes_to_names, courses, students, full_mapping,
+                students_to_picks, student_hashes_to_names,
+                student_course_to_student_rank)
 
 
 @click.command()
-# @click.argument('data', default='CoursePicks')
 @click.option(
     '--exp_weighting',
     '-e',
@@ -102,13 +153,15 @@ def main(exp_weighting):
     if (exp_weighting is not None):
         exponential_weighting = True
 
-    data_path = 'CoursePicks.csv'  #Data directory
+    data_path = 'AutomatedCoursePicks.csv'  #Data directory
     parsed_data = read_data(data_path, exponential_weighting)
-    courses = parsed_data[0]
-    students = parsed_data[1]
-    mapping = parsed_data[2]
-    students_to_picks = parsed_data[3]
-    student_hashes_to_names = parsed_data[4]
+    course_hashes_to_names = parsed_data[0]
+    courses = parsed_data[1]
+    students = parsed_data[2]
+    mapping = parsed_data[3]
+    students_to_picks = parsed_data[4]
+    student_hashes_to_names = parsed_data[5]
+    student_course_to_student_rank = parsed_data[6]
 
     model = cp_model.CpModel()
     course_match = {}
@@ -118,10 +171,16 @@ def main(exp_weighting):
             course_match[(c, s)] = model.NewBoolVar(
                 'course%iis assigned to %i' % (c, s))
 
+    for c in courses:
+        for s in students:
+            if student_course_to_student_rank[(c, s)] is None:
+                model.Add(course_match[(c, s)] == 0)
+
     for s in students_to_picks:
         for period in range(0, 4):
             picks = students_to_picks[s][period]
-            model.Add(sum(course_match[(c, s)] for c in picks) == 1)
+            if (len(picks) != 0):
+                model.Add(sum(course_match[(c, s)] for c in picks) == 1)
 
     for c in courses:
         course_max = 10
@@ -143,7 +202,7 @@ def main(exp_weighting):
     if not os.path.exists('results'):
         os.mkdir('results')
 
-    cur_filename = 'results/' + 'results.txt'  #+ str(datetime.datetime.now())
+    cur_filename = 'results/' + 'results.csv'  #+ str(datetime.datetime.now())
     f = open(cur_filename, 'w')
 
     # for s in students_to_picks:
@@ -158,11 +217,14 @@ def main(exp_weighting):
 
     for student_hash in student_hashes_to_names:
         student_name = student_hashes_to_names[student_hash]
-        str_to_write = student_name + ": "
+        str_to_write = student_name[0] + ',' + student_name[
+            1] + ',' + student_name[2] + ','
         for c in courses:
             if solver.Value(course_match[(c, student_hash)]) == 1:
                 # print(course_match[(c, student_hash)])
-                str_to_write += str(c)
+                str_to_write += course_hashes_to_names[c]
+                str_to_write += get_num_stars(
+                    student_course_to_student_rank[(c, student_hash)])
                 str_to_write += ', '
         str_to_write += '\n'
         f.write(str_to_write)
