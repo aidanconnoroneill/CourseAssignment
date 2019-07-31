@@ -5,6 +5,7 @@ import click
 from ortools.sat.python import cp_model
 
 
+# CPModel
 class ClassesPartialSolutionPrinter(cp_model.CpSolverSolutionCallback):
     """Print intermediate solutions."""
     def __init__(self, course_assignments, courses, students, sols):
@@ -29,6 +30,7 @@ class ClassesPartialSolutionPrinter(cp_model.CpSolverSolutionCallback):
         return self._solution_count
 
 
+# Gets the weight of a course given its ranking and whether or not to use the exponential ranking system
 def get_course_weight(pos, is_exp):
     if pos is None:
         return -1
@@ -48,6 +50,7 @@ def get_course_weight(pos, is_exp):
     return -1
 
 
+# Gets the period associated with a classname.  Classnames should include "P1, P2, P3 or P4" at the beginning
 def get_period(word):
     period = word.split()[0]
     if period == 'P1':
@@ -61,6 +64,7 @@ def get_period(word):
     return -1
 
 
+# Returns the number of stars associated with a ranking
 def get_num_stars(rank):
     if rank is None:
         return "UH-OH"
@@ -70,6 +74,7 @@ def get_num_stars(rank):
     return ret
 
 
+# Parse the data in the csv into a bunch of useful maps
 def read_data(filename, is_exp):
     count = 0
     course_hashes_to_names = {}
@@ -106,9 +111,6 @@ def read_data(filename, is_exp):
             student_hashes_to_names.update({student_id: full_student})
             students.append(student_id)
 
-            count += 1
-            # if count > 3:
-            #     break
             periods = []
             index_in_line = 3
             for period in range(1, 5):
@@ -131,11 +133,6 @@ def read_data(filename, is_exp):
                     index_in_line += 1
                 periods.append(picks)
             students_to_picks.update({student_id: periods})
-
-        # for c in course_hashes_to_names:
-        #     for s in students:
-        #         if (c, s) not in full_mapping:
-        #             full_mapping.update({(c, s): -100})
 
         return (course_hashes_to_names, courses, students, full_mapping,
                 students_to_picks, student_hashes_to_names,
@@ -165,12 +162,12 @@ def main(exp_weighting):
 
     model = cp_model.CpModel()
     course_match = {}
-
+    #Set up model
     for c in courses:
         for s in students:
             course_match[(c, s)] = model.NewBoolVar(
                 'course%iis assigned to %i' % (c, s))
-
+    #Add constraints
     for c in courses:
         for s in students:
             if student_course_to_student_rank[(c, s)] is None:
@@ -188,6 +185,7 @@ def main(exp_weighting):
         model.Add(sum(course_match[(c, s)] for s in students) <= course_max)
         model.Add(sum(course_match[(c, s)] for s in students) >= course_min)
 
+    #Have google's ortools work its magic
     model.Maximize(
         sum(course_match[(c, s)] * mapping[(c, s)] for c in courses
             for s in students))
@@ -196,59 +194,29 @@ def main(exp_weighting):
 
     solver.Solve(model)
 
-    # Log statistics about the solution. Used to evaluate the "goodness" of a solution
+    # Write human-readable solution to file results.csv
     num_students = len(students)
 
     if not os.path.exists('results'):
         os.mkdir('results')
 
-    cur_filename = 'results/' + 'results.csv'  #+ str(datetime.datetime.now())
+    cur_filename = 'results/' + 'results.csv'
     f = open(cur_filename, 'w')
-
-    # for s in students_to_picks:
-    #     for period in range(0, 4):
-    #         picks = students_to_picks[s][period]
-    #         for c in picks:
-    #             if solver.Value(course_match[(c, s)]) == 1:
-    #                 print("Course: " + str(c) + " Student: " +
-    #                       str(student_hashes_to_names[s]))
-
-    #         print(sum(solver.Value(course_match[(c, s)]) for c in picks))
-
     for student_hash in student_hashes_to_names:
         student_name = student_hashes_to_names[student_hash]
         str_to_write = student_name[0] + ',' + student_name[
             1] + ',' + student_name[2] + ','
         for c in courses:
             if solver.Value(course_match[(c, student_hash)]) == 1:
-                # print(course_match[(c, student_hash)])
                 str_to_write += course_hashes_to_names[c]
                 str_to_write += get_num_stars(
                     student_course_to_student_rank[(c, student_hash)])
                 str_to_write += ', '
         str_to_write += '\n'
         f.write(str_to_write)
-    # f.write("\n=================")
-    # f.write(
-    #     "\nPercent of all students that got their {}th choice: {}% ({} total)\n"
-    #     .format(i + 1, percent, num_successes[i]))
-    # f.write(
-    #     "\nPercent of seniors that got their {}th choice: {}% ({} total)".
-    #     format(i + 1, senior_percent, num_senior_succ[i]))
-    # f.write(
-    #     "\nPercent of juniors that got their {}th choice: {}% ({} total)".
-    #     format(i + 1, junior_percent, num_junior_succ[i]))
-    # f.write(
-    #     "\nPercent of sophomores that got their {}th choice: {}% ({} total)"
-    #     .format(i + 1, soph_percent, num_soph_succ[i]))
-    # f.write(
-    #     "\nPercent of first years that got their {}th choice: {}% ({} total)"
-    #     .format(i + 1, first_percent, num_first_succ[i]))
-    # f.write("\n=================\n")
     f.close()
     print('Done writing')
 
-    # solver.SearchForAllSolutions(model, solution_printer)
     # Statistics.
     print('Results saved to {}'.format(cur_filename))
     print()
@@ -258,9 +226,6 @@ def main(exp_weighting):
     print('  - Value of courses = %i' % solver.ObjectiveValue())
 
     print('  - wall time       : %f s' % solver.WallTime())
-    # print('  - solutions found : %i' % solution_printer.solution_count())
-
-    # x = solver.NumVar(-solver.infinity(), solver.infinity(), 'x')
 
 
 if __name__ == "__main__":
