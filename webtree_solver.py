@@ -70,7 +70,7 @@ def get_num_stars(rank):
         return "UH-OH"
     ret = ""
     for i in range(0, rank):
-        ret += '*'
+        ret += '!'
     return ret
 
 
@@ -150,7 +150,7 @@ def main(exp_weighting):
     if (exp_weighting is not None):
         exponential_weighting = True
 
-    data_path = 'AutomatedCoursePicks.csv'  #Data directory
+    data_path = 'CoursePicks.csv'  #Data directory
     parsed_data = read_data(data_path, exponential_weighting)
     course_hashes_to_names = parsed_data[0]
     courses = parsed_data[1]
