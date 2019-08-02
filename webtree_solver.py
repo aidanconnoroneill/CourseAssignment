@@ -89,7 +89,7 @@ def read_data(filename, is_exp):
     first_line = []
 
     student_course_to_student_rank = {}
-
+    periods_to_courses = [[], [], [], []]
     with open(filename, 'r') as file:
         csv_reader = csv.reader(file, delimiter=',')
 
@@ -104,6 +104,8 @@ def read_data(filename, is_exp):
                     num_courses_per_period[get_period(line[i]) - 1] += 1
                     course_hashes_to_names.update({hash(line[i]): line[i]})
                     courses.append(hash(line[i]))
+                    periods_to_courses[get_period(line[i]) - 1].append(
+                        hash(line[i]))
                 continue
             # Get the full student
             full_student = (line[0], line[1], line[2])
@@ -136,7 +138,8 @@ def read_data(filename, is_exp):
 
         return (course_hashes_to_names, courses, students, full_mapping,
                 students_to_picks, student_hashes_to_names,
-                student_course_to_student_rank)
+                student_course_to_student_rank, num_courses_per_period,
+                periods_to_courses)
 
 
 @click.command()
@@ -159,6 +162,8 @@ def main(exp_weighting):
     students_to_picks = parsed_data[4]
     student_hashes_to_names = parsed_data[5]
     student_course_to_student_rank = parsed_data[6]
+    num_courses_per_period = parsed_data[7]
+    periods_to_courses = parsed_data[8]
 
     model = cp_model.CpModel()
     course_match = {}
@@ -179,11 +184,17 @@ def main(exp_weighting):
             if (len(picks) != 0):
                 model.Add(sum(course_match[(c, s)] for c in picks) == 1)
 
-    for c in courses:
-        course_max = 10
-        course_min = 5
-        model.Add(sum(course_match[(c, s)] for s in students) <= course_max)
-        model.Add(sum(course_match[(c, s)] for s in students) >= course_min)
+    for i in range(0, 4):
+        courses_in_period = periods_to_courses[i]
+        expected_students = int(3 * len(students) / len(courses_in_period) / 4)
+
+        for c in courses_in_period:
+            course_max = expected_students + 2
+            course_min = expected_students - 2
+            model.Add(
+                sum(course_match[(c, s)] for s in students) <= course_max)
+            model.Add(
+                sum(course_match[(c, s)] for s in students) >= course_min)
 
     #Have google's ortools work its magic
     model.Maximize(
