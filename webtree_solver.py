@@ -206,14 +206,34 @@ def main(exp_weighting):
         student_name = student_hashes_to_names[student_hash]
         str_to_write = student_name[0] + ',' + student_name[
             1] + ',' + student_name[2] + ','
+        lst_courses = ["Teaching", "Teaching", "Teaching", "Teaching"]
         for c in courses:
             if solver.Value(course_match[(c, student_hash)]) == 1:
-                str_to_write += course_hashes_to_names[c]
-                str_to_write += get_num_stars(
+                course_name = course_hashes_to_names[c]
+                course_period = get_period(course_name)
+                lst_courses[course_period - 1] = course_name + get_num_stars(
                     student_course_to_student_rank[(c, student_hash)])
-                str_to_write += ', '
+        for i in range(0, 4):
+
+            str_to_write += lst_courses[i]
+            # if lst_courses[i] != "Teaching":
+            #     str_to_write += get_num_stars(
+            #         student_course_to_student_rank[(c, student_hash)])
+            str_to_write += ', '
         str_to_write += '\n'
         f.write(str_to_write)
+    f.write('\n')
+    for c in courses:
+        course_name = course_hashes_to_names[c]
+        f.write(course_name + ",\n")
+        for student_hash in student_hashes_to_names:
+            if solver.Value(course_match[(c, student_hash)]) == 1:
+                student_name = student_hashes_to_names[student_hash]
+                str_to_write = student_name[0] + ',' + student_name[
+                    1] + ',' + student_name[2] + ','
+                f.write(str_to_write + "\n")
+        f.write('\n')
+
     f.close()
     print('Done writing')
 
