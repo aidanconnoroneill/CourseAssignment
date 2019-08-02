@@ -1,6 +1,6 @@
 # Course Assignment
 
-A project that assigns courses to students using weighted maximum satisfiability techniques in an effort to maximize utility.  It guarantees that, should such a solution exist, each course will have at minimum 5 students and at most 10 and that students will not receive courses that they have not requested.  It offers two objective functions that give preference to students' first picks over their second picks and so on and so forth.  
+A project that assigns courses to students using weighted maximum satisfiability techniques in an effort to maximize utility.  It guarantees that, should such a solution exist, each course will have at minimum 2 students less than the expected number of students per class if every class size was perfectly balanced and at most 2 students more than that expected number.  In addition, it guarantees that students will not receive courses that they have not requested.  It offers two objective functions that give preference to students' first picks over their second picks and so on and so forth.  
 
 
 ### Prerequisites
@@ -52,8 +52,8 @@ Course assignments will be written to /results/results.txt.
 If you want to change the course ceiling and floor, go to the following two lines of code 
 
 ```
-        course_max = 10
-        course_min = 5
+            course_max = expected_students + 2
+            course_min = expected_students - 2
 ```
 and change them to the values that you prefer.  Similarly, if you want to try a different weighting scheme, navigate to 
 
@@ -64,7 +64,7 @@ and change them to the values that you prefer.  Similarly, if you want to try a 
         if pos == 2:
             return 9
         if pos == 3:
-            return 8
+            return 7
         if pos == 4:
             return 2
         if pos == 5:
