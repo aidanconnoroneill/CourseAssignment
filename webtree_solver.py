@@ -42,7 +42,7 @@ def get_course_weight(pos, is_exp):
         if pos == 2:
             return 9
         if pos == 3:
-            return 8
+            return 7
         if pos == 4:
             return 2
         if pos == 5:
