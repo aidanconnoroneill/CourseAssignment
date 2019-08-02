@@ -117,7 +117,7 @@ def read_data(filename, is_exp):
                 picks = []
                 for course in range(0, num_courses_per_period[period - 1]):
                     pick_rank = None
-                    if (line[index_in_line] != ''):
+                    if line[index_in_line] != '' and line[index_in_line] != ' ':
                         pick_rank = int(line[index_in_line])
                     weight = get_course_weight(pick_rank, is_exp)
                     full_mapping.update({
