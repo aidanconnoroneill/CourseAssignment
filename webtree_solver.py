@@ -184,13 +184,24 @@ def main(exp_weighting):
             if (len(picks) != 0):
                 model.Add(sum(course_match[(c, s)] for c in picks) == 1)
 
-    for i in range(0, 4):
-        courses_in_period = periods_to_courses[i]
-        expected_students = int(3 * len(students) / len(courses_in_period) / 4)
+    for i in range(1, 5):
+        courses_in_period = periods_to_courses[i - 1]
+        # expected_students = int(3 * len(students) / len(courses_in_period) / 4)
 
         for c in courses_in_period:
-            course_max = expected_students + 2
-            course_min = expected_students - 2
+            if i == 1:
+                course_max = 10
+                course_min = 5
+            if i == 2:
+                course_max = 10
+                course_min = 5
+            if i == 3:
+                course_max = 10
+                course_min = 5
+            if i == 4:
+                course_max = 10
+                course_min = 5
+
             model.Add(
                 sum(course_match[(c, s)] for s in students) <= course_max)
             model.Add(
