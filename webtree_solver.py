@@ -90,6 +90,8 @@ def read_data(filename, is_exp):
 
     student_course_to_student_rank = {}
     periods_to_courses = [[], [], [], []]
+    count_students_per_period = [0, 0, 0, 0]
+
     with open(filename, 'r') as file:
         csv_reader = csv.reader(file, delimiter=',')
 
@@ -117,10 +119,12 @@ def read_data(filename, is_exp):
             index_in_line = 3
             for period in range(1, 5):
                 picks = []
+                flag = False
                 for course in range(0, num_courses_per_period[period - 1]):
                     pick_rank = None
                     if line[index_in_line] != '' and line[index_in_line] != ' ':
                         pick_rank = int(line[index_in_line])
+                        flag = True
                     weight = get_course_weight(pick_rank, is_exp)
                     full_mapping.update({
                         (hash(first_line[index_in_line]), student_id):
@@ -134,12 +138,14 @@ def read_data(filename, is_exp):
                         picks.append(hash(first_line[index_in_line]))
                     index_in_line += 1
                 periods.append(picks)
+                if flag:
+                    count_students_per_period[period - 1] += 1
             students_to_picks.update({student_id: periods})
 
         return (course_hashes_to_names, courses, students, full_mapping,
                 students_to_picks, student_hashes_to_names,
                 student_course_to_student_rank, num_courses_per_period,
-                periods_to_courses)
+                periods_to_courses, count_students_per_period)
 
 
 @click.command()
@@ -164,6 +170,7 @@ def main(exp_weighting):
     student_course_to_student_rank = parsed_data[6]
     num_courses_per_period = parsed_data[7]
     periods_to_courses = parsed_data[8]
+    count_students_per_period = parsed_data[9]
 
     model = cp_model.CpModel()
     course_match = {}
@@ -184,24 +191,13 @@ def main(exp_weighting):
             if (len(picks) != 0):
                 model.Add(sum(course_match[(c, s)] for c in picks) == 1)
 
-    for i in range(1, 5):
-        courses_in_period = periods_to_courses[i - 1]
-        # expected_students = int(3 * len(students) / len(courses_in_period) / 4)
-
+    for i in range(0, 4):
+        courses_in_period = periods_to_courses[i]
+        expected_students = int(count_students_per_period[i] /
+                                len(courses_in_period))
         for c in courses_in_period:
-            if i == 1:
-                course_max = 10
-                course_min = 5
-            if i == 2:
-                course_max = 10
-                course_min = 5
-            if i == 3:
-                course_max = 10
-                course_min = 5
-            if i == 4:
-                course_max = 10
-                course_min = 5
-
+            course_max = expected_students + 1
+            course_min = expected_students
             model.Add(
                 sum(course_match[(c, s)] for s in students) <= course_max)
             model.Add(
