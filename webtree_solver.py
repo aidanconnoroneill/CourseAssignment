@@ -67,7 +67,7 @@ def get_period(word):
 # Returns the number of stars associated with a ranking
 def get_num_stars(rank):
     if rank is None:
-        return "UH-OH"
+        return ""
     ret = ""
     for i in range(0, rank):
         ret += '!'
@@ -91,6 +91,8 @@ def read_data(filename, is_exp):
     student_course_to_student_rank = {}
     periods_to_courses = [[], [], [], []]
     count_students_per_period = [0, 0, 0, 0]
+
+    lst_delinquent_ids = []
 
     with open(filename, 'r') as file:
         csv_reader = csv.reader(file, delimiter=',')
@@ -117,6 +119,7 @@ def read_data(filename, is_exp):
 
             periods = []
             index_in_line = 3
+            is_delinquent = True
             for period in range(1, 5):
                 picks = []
                 flag = False
@@ -140,12 +143,16 @@ def read_data(filename, is_exp):
                 periods.append(picks)
                 if flag:
                     count_students_per_period[period - 1] += 1
+                    is_delinquent = False
             students_to_picks.update({student_id: periods})
+            if is_delinquent:
+                lst_delinquent_ids.append(student_id)
 
         return (course_hashes_to_names, courses, students, full_mapping,
                 students_to_picks, student_hashes_to_names,
                 student_course_to_student_rank, num_courses_per_period,
-                periods_to_courses, count_students_per_period)
+                periods_to_courses, count_students_per_period,
+                lst_delinquent_ids)
 
 
 @click.command()
@@ -171,6 +178,7 @@ def main(exp_weighting):
     num_courses_per_period = parsed_data[7]
     periods_to_courses = parsed_data[8]
     count_students_per_period = parsed_data[9]
+    lst_delinquent_ids = parsed_data[10]
 
     model = cp_model.CpModel()
     course_match = {}
@@ -191,6 +199,7 @@ def main(exp_weighting):
             if (len(picks) != 0):
                 model.Add(sum(course_match[(c, s)] for c in picks) == 1)
 
+    courses_to_min_max = {}
     for i in range(0, 4):
         courses_in_period = periods_to_courses[i]
         expected_students = int(count_students_per_period[i] /
@@ -198,6 +207,7 @@ def main(exp_weighting):
         for c in courses_in_period:
             course_max = expected_students + 1
             course_min = expected_students
+            courses_to_min_max.update({c: (course_max, course_min)})
             model.Add(
                 sum(course_match[(c, s)] for s in students) <= course_max)
             model.Add(
@@ -220,23 +230,42 @@ def main(exp_weighting):
 
     cur_filename = 'results/' + 'results.csv'
     f = open(cur_filename, 'w')
+
+    course_enrollment = {}
+    for c in courses:
+        num_students_in_course = 0
+        for s in students:
+            if solver.Value(course_match[c, s]) == 1:
+                num_students_in_course += 1
+
+        course_enrollment.update({c: num_students_in_course})
+
     for student_hash in student_hashes_to_names:
         student_name = student_hashes_to_names[student_hash]
         str_to_write = student_name[0] + ',' + student_name[
             1] + ',' + student_name[2] + ','
         lst_courses = ["Teaching", "Teaching", "Teaching", "Teaching"]
+
         for c in courses:
+            num_students_in_course = course_enrollment[c]
             if solver.Value(course_match[(c, student_hash)]) == 1:
                 course_name = course_hashes_to_names[c]
                 course_period = get_period(course_name)
                 lst_courses[course_period - 1] = course_name + get_num_stars(
                     student_course_to_student_rank[(c, student_hash)])
-        for i in range(0, 4):
+            elif num_students_in_course < courses_to_min_max[c][0] and (
+                    student_hash in lst_delinquent_ids):
+                course_name = course_hashes_to_names[c]
+                course_period = get_period(course_name)
+                if lst_courses[course_period - 1] == "Teaching":
+                    lst_courses[
+                        course_period - 1] = course_name + get_num_stars(
+                            student_course_to_student_rank[(c, student_hash)])
+                    new_enrollment_num = num_students_in_course + 1
+                    course_enrollment.update({c: new_enrollment_num})
 
+        for i in range(0, 4):
             str_to_write += lst_courses[i]
-            # if lst_courses[i] != "Teaching":
-            #     str_to_write += get_num_stars(
-            #         student_course_to_student_rank[(c, student_hash)])
             str_to_write += ', '
         str_to_write += '\n'
         f.write(str_to_write)
@@ -251,6 +280,12 @@ def main(exp_weighting):
                     1] + ',' + student_name[2] + ','
                 f.write(str_to_write + "\n")
         f.write('\n')
+
+    for c in courses:
+
+        course_name = course_hashes_to_names[c]
+        num_students_in_this_course = str(course_enrollment[c])
+        f.write(course_name + "," + num_students_in_this_course + ",\n")
 
     f.close()
     print('Done writing')
