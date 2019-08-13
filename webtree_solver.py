@@ -166,7 +166,7 @@ def main(exp_weighting):
     if (exp_weighting is not None):
         exponential_weighting = True
 
-    data_path = 'CoursePicks.csv'  #Data directory
+    data_path = 'MervisRealCoursePicks.csv'  #Data directory
     parsed_data = read_data(data_path, exponential_weighting)
     course_hashes_to_names = parsed_data[0]
     courses = parsed_data[1]
@@ -245,24 +245,41 @@ def main(exp_weighting):
         str_to_write = student_name[0] + ',' + student_name[
             1] + ',' + student_name[2] + ','
         lst_courses = ["Teaching", "Teaching", "Teaching", "Teaching"]
-
-        for c in courses:
-            num_students_in_course = course_enrollment[c]
-            if solver.Value(course_match[(c, student_hash)]) == 1:
-                course_name = course_hashes_to_names[c]
-                course_period = get_period(course_name)
-                lst_courses[course_period - 1] = course_name + get_num_stars(
-                    student_course_to_student_rank[(c, student_hash)])
-            elif num_students_in_course < courses_to_min_max[c][0] and (
-                    student_hash in lst_delinquent_ids):
-                course_name = course_hashes_to_names[c]
-                course_period = get_period(course_name)
-                if lst_courses[course_period - 1] == "Teaching":
+        if student_hash not in lst_delinquent_ids:
+            for c in courses:
+                num_students_in_course = course_enrollment[c]
+                if solver.Value(course_match[(c, student_hash)]) == 1:
+                    course_name = course_hashes_to_names[c]
+                    course_period = get_period(course_name)
                     lst_courses[
                         course_period - 1] = course_name + get_num_stars(
                             student_course_to_student_rank[(c, student_hash)])
-                    new_enrollment_num = num_students_in_course + 1
-                    course_enrollment.update({c: new_enrollment_num})
+                if num_students_in_course == courses_to_min_max[c][1] and (
+                        student_hash in lst_delinquent_ids):
+                    course_name = course_hashes_to_names[c]
+                    course_period = get_period(course_name)
+                    if lst_courses[course_period - 1] == "Teaching":
+
+                        # print("Here:" + str_to_write + str(course_period))
+                        lst_courses[course_period -
+                                    1] = course_name + get_num_stars(
+                                        student_course_to_student_rank[
+                                            (c, student_hash)])
+                        new_enrollment_num = num_students_in_course + 1
+                        course_enrollment.update({c: new_enrollment_num})
+        else:
+
+            for period in range(1, 5):
+                course_assignment = lst_courses[period - 1]
+                if course_assignment == "Teaching":
+                    for c in courses:
+                        num_students_in_course = course_enrollment[c]
+                        course_period = get_period(course_hashes_to_names[c])
+                        if num_students_in_course <= courses_to_min_max[c][
+                                0] + 1 and course_period == period:
+                            lst_courses[period - 1] = course_hashes_to_names[c]
+                            print("Here")
+                            break
 
         for i in range(0, 4):
             str_to_write += lst_courses[i]
